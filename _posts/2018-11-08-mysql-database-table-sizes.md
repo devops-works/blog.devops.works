@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Finding out databases & tables sizes in MySQL"
+title: Finding out databases & tables sizes in MySQL
 excerpt: >-
   How to find which databases or tables takes the most space in
   your MySQL instance.
@@ -26,7 +26,7 @@ database itslef (I'm looking at you Drupal).
 
 Here are a few SQL snippets to check where you precious SSD goes.
 
-## Listing the 10 biggets databases
+# Listing the 10 biggets databases
 
 ```sql
 SELECT
@@ -41,7 +41,7 @@ SELECT
     ORDER BY sum(data_length+index_length) DESC LIMIT 10;
 ```
 
-## Listing the 20 biggest tables (regardless of the database)
+# Listing the 20 biggest tables (regardless of the database)
 
 ```sql
 SELECT CONCAT(table_schema, '.', table_name),
@@ -55,15 +55,15 @@ ORDER  BY data_length + index_length DESC
 LIMIT  20;
 ```
 
-## Listing total data size for MySQL instance
+# Listing total data size for MySQL instance
 
-```
+```sql
 SELECT CONCAT(SUM(ROUND(index_length / ( 1024 * 1024 * 1024 ), 2)),' G') idx,
        CONCAT(SUM(ROUND(( data_length + index_length ) / ( 1024 * 1024 * 1024 ), 2)),' G') total_size
 FROM   information_schema.TABLES;
 ```
 
-## Examining sizes per database engine
+# Examining sizes per database engine
 
 ```sql
 SELECT engine,
@@ -77,6 +77,3 @@ FROM information_schema.TABLES
 GROUP BY engine
 ORDER BY sum(data_length+index_length) DESC LIMIT 10;
 ```
-
-
-

@@ -14,8 +14,6 @@ image:
   caption: "Photo credit [Paramjeet](http://pixabay.com/fr/users/Paramjeet-66854/)"
 ---
 
-*(revised 20181110 per @theenglishway suggestions)*
-
 I have been writing playbooks for quite a while now. Along the way, I
 went through various stages, and used different ways to layout Ansible
 files. I guess that after going down this trial and error path, I
@@ -27,13 +25,13 @@ you'll be able to move on from there. This post will probably help you
 if you are new to Ansible, trying to figure out what to put and where.
 I hope it will prove usefull if you have some Ansible experience too.
 
-## Some terminology
+# Some terminology
 
 In this post, I will mostly talk about 3 things: roles, inventories and
 playbooks. Other items do exist (plays, tasks, ...) but those 3 elements
 shape the big picture of the layout.
 
-### Roles
+## Roles
 
 A role is a collection of tasks and templates (among other things, but
 those are the most common) focused on one very specific goal. For
@@ -44,7 +42,7 @@ Nginx role will install and configure nginx. Nothing else. It won't
 create DNS entries, trim logs, add a ftp server or anything. It just
 installs nginx. Period.
 
-### Inventories
+## Inventories
 
 An inventory is a list of hosts, eventually assembled into groups, on
 which you will run ansible playbooks. Ansible automatically puts all defined
@@ -64,20 +62,19 @@ case, the format is not the same as static inventory).
 You can of course have multiple inventories, segregated from each other.
 We will take advantage from this later on.
 
-### Playbooks
+## Playbooks
 
 The last piece of the puzzle is the playbook. The playbook is the pivot
 between and inventory and roles. This is where you basically tell
 Ansible: _please install roles foo, bar and baz on machines alice, bob
 and charlie_.
 
-## Role layout
+# Role layout
 
 Role layout is pretty well documented at Ansible website. A role contains
 several directories. All directories are optional besides `tasks`. For each
 directory, the entry point is `main.yml`. Thus, the only compulsory file in a
 role is `tasks/main.yml`.
-
 
     ansible-foobar/
     ├── defaults
@@ -97,7 +94,7 @@ role is `tasks/main.yml`.
 Let's cover briefly the layout an see the function of each file and
 directory.
 
-### `defaults/main.yml`
+## `defaults/main.yml`
 
 This directory contains defaults for variables used in roles. I
 encourage you to define every variable used in your role, for several
@@ -116,11 +113,11 @@ Best practices assumes that you are using _pseudo-namespacing_ for your
 role's variables (e.g. for role `foobar`, all variables should begin
 with `foobar_`) to avoid collisions with other roles.
 
-### `files/`
+## `files/`
 
 This directory holds files that do not require Jinja interpolation, and can be copied as-is on the remote nodes.
 
-### `handlers/main.yml`
+## `handlers/main.yml`
 
 This is where you define handlers that get notified by tasks. Handlers
 are just standard tasks. You can use `include` in this file if you want
@@ -133,18 +130,18 @@ service config file is valid before attempting to restart it. Some
 daemons allow this (e.g. nginx, haproxy, apache). If your service does
 not, provide some fallback mechanism. You don't want your playbook to
 screw up your running system because you typoed a configuration
-variable. See the `validate` option in the 
+variable. See the `validate` option in the
 [template module](http://docs.ansible.com/template_module.html).
 
 Note that handlers are just standard tasks.
 
-### `meta/main.yml`
+## `meta/main.yml`
 
 This metadata has (AFAIK) only two variables:
 
 - `galaxy_info`: meta information for galaxy about your role. You just
-  don't need this if you don intend to push your role to Galaxy. For
-details on the format, see TODO: find ref
+  don't need this if you don't intend to push your role to Galaxy. For
+  details on the format, see [Role Metedata](https://galaxy.ansible.com/docs/contributing/creating_role.html#role-metadata)
 - `dependencies`: what roles this role depends on.
 
 The latter is of utmost importance, and setting it right deserves a blog
@@ -156,13 +153,13 @@ perfectly reasonable[^1]. However, adding a `mysql` dependency to your
 web application role is not, because `mysql` can be deployed on another
 server.
 
-**A note 3 years later**: I do not use dependencies anymore. I had issues
+However, I do not use dependencies anymore. I had issues
 regarding role's defaults variables behavior. Also, the playbook is the
 main focus area when building infrastructure code. Having explicit
 dependencies in the playbook is the way to go. No weird or hard to track
 magic.
 
-### `tasks/main.yml`
+## `tasks/main.yml`
 
 This file is the tasks entry point. However, it should be mostly empty.
 Why ? Because you want to use Ansible tags. Tags are a great way to
@@ -178,13 +175,13 @@ cumbersome, error prone, and clutter the code unnecessarily.
 The best way to tag all your tasks is to include your real task file
 from `tasks/main.yml` and tag the whole file:
 
-{% highlight yaml %}
+```yaml
 
 - import_tasks: foobar.yml
   tags:
     - foobar
 
-{% endhighlight %}
+```
 
 Here, I name the real task file `foobar.yml` with the same name as the role
 (quite handy with `find` or `locate`; no need to guess which `main.yml` you are
@@ -194,7 +191,7 @@ You can repeat this if you have a big list of tasks and want to split
 them in several files. You could, for instance, separate configuration
 and installation matters, and add another specific tag for each of them:
 
-{% highlight yaml %}
+```yaml
 
 - import_tasks: foobar-install.yml
   tags:
@@ -206,7 +203,7 @@ and installation matters, and add another specific tag for each of them:
     - foobar
     - foobar:config
 
-{% endhighlight %}
+```
 
 Here I added two tags to the installation part (`foobar` and
 `foobar:install`), and two for the configuration part (`foobar` and
@@ -219,13 +216,15 @@ convention (Redis like) for refining tags.
 With this setup, you could run only the configuration part of your role
 by issuing:
 
-`ansible-playbook playbook.yml -t foobar:config`
+```bash
+ansible-playbook playbook.yml -t foobar:config`
+```
 
 The `-t` and `-l` combination is a very powerful weapon to target
 a specific host with a precise change (think of this as pointing to a
 matrix cell targetting host (i.e. row) and tag (i.e. column)).
 
-#### A word of caution
+### A word of caution
 
 Do not overdo tags: most of the time, this is YAGNI (You Ain't Gonna
 Need It). Create a tag if you're gonna need it. It can be hard to
@@ -235,26 +234,23 @@ tag.
 
 For instance:
 
-{% highlight yaml %}
+```yaml
 
 - import_tasks: foobar-uninstall.yml
   tags
     - never
     - foobar
 
-{% endhighlight %}
+```
 
 will execute tasks in `foobar-uninstall.yml` if tag `foobar` is
 specified at the command line.
 
-### `tasks/check_vars.yml`
+## `tasks/check_vars.yml`
 
 I use this file to ensure that required variables are defined.
 
-{% highlight yaml %}
-
-{% raw %}
-
+```yaml
 #
 # Checking that required variables are set
 #
@@ -265,13 +261,11 @@ I use this file to ensure that required variables are defined.
     - foobar_database
     - foobar_deploy_user
 
-{% endraw %}
-
-{% endhighlight %}
+```
 
 Then, include this file in `tasks/main.yml`:
 
-{% highlight yaml %}
+```yaml
 
 - import_tasks: check_vars.yml
   tags:
@@ -283,22 +277,22 @@ Then, include this file in `tasks/main.yml`:
   tags:
     - foobar
 
-{% endhighlight %}
+```
 
-### `templates/*`
+## `templates/*`
 
 This is the place where templates (i.e. files with interpolated
 variables goes). While this is not necessary, I often reference them
 using a relative path like so:
 
-{% highlight yaml %}
+```yaml
 
 - name: Template foo
   template:
     src: ../templates/foo.conf.j2
     dest: /some/place/in/the/node/filesystem/foo.conf
 
-{% endhighlight %}
+```
 
 The goal of using relative path is to be able to hit `gf` in Vim and
 open the file directly. You can get rid of that and just use `src:
@@ -312,7 +306,7 @@ Some folks like to replicate the destination hierarchy (e.g. `src: etc/sysconfig
 /network-scripts/ifcfg-ethx.cfg.j2`). This is a matter of taste, but personaly I
 don't see the point of having those deep hierarchies in the role if the naming is correct.
 
-### `vars/main.yml`
+## `vars/main.yml`
 
 It is sometimes difficult to grok the difference between
 `vars/main.yml` and `defaults/main.yml`. After all, they both contain
@@ -329,7 +323,7 @@ want to deploy won't.
 All in all, it is just a mechanism to take those values out of tasks files
 readability and role life cycle.
 
-## Inventories and playbook layout
+# Inventories and playbook layout
 
 A playbook glues together roles and inventories. Thus playbooks depend on roles
 and inventories. But while you have mechanisms to list roles requirements in a
@@ -361,7 +355,7 @@ inventories in my playbooks.
         ├── 10_database.yml
         └── 20_stuff.yml
 
-### `ansible.cfg`, `roles/` and `roles/requirements.yml`
+## `ansible.cfg`, `roles/` and `roles/requirements.yml`
 
 This file controles ansible behaviour. You can have one in `/etc/ansible` or as
 a personal dotfile (`~/.ansible.cfg`). Adding an `ansible.cfg` file in the
@@ -377,12 +371,11 @@ Ansible will use the first config file found.
 
 In this config file, I always set at least two options:
 
-{% highlight ini %}
-
+```ini
 hostfile = ./inventories/dev
 roles_path = ./roles:/some/path/to/roles/repos
 
-{% endhighlight %}
+```
 
 The first one (`hostfile`) sets which inventory Ansible will use. More
 explanations will come below.
@@ -395,7 +388,7 @@ two directories here (separated by `:`, like shell's `PATH`):
   to add the directory content (except `requirements.yml`) in your
   playbook's `.gitignore` like so:
 
-```
+```gitignore
 !/roles
 /roles/*
 !/roles/requirements.yml
@@ -414,7 +407,7 @@ your roles for this playbook.
 Roles dependencies for your playbook are listed in `requirements.yml`
 and can be installed with `ansible-galaxy install -r requirements.yml`:
 
-{% highlight yaml %}
+```yaml
 
 # Role on galaxy
 - you.rolename
@@ -425,9 +418,9 @@ and can be installed with `ansible-galaxy install -r requirements.yml`:
 - name: role-private
   src: git+ssh://git@github.com/you/role-private.git
 
-{% endhighlight %}
+```
 
-### `inventories/`
+## `inventories/`
 
 This directory holds all inventories you want to apply your playbook too. The
 most common pattern is to use per-environment inventories: one for
@@ -452,14 +445,18 @@ Note that `group_vars/all` can be a directory containing several files. I
 usually split variables in a clear text file (`group_vars/all/all`) and a
 ciphered one (`group_vars/all_secret`).
 
-**Note 3 years later**: now ansible allow you to vault a single variable in
-an inventory. Use it !
+Since the first revision of this post, ansible added the possibility to vault a
+single variable in an inventory. Use it !
 
 Here is a handy bash alias that crypts text selected with a mouse:
 
-`alias vault_clip_crypt='echo Passing $(xclip -rmlastnl -o) to ansible-vault && echo -n "$(xclip -rmlastnl -o)" | ansible-vault encrypt_string'`
+```bash
+alias vault_clip_crypt='echo Passing $(xclip -rmlastnl -o) to ansible-vault && echo -n "$(xclip -rmlastnl -o)" | ansible-vault encrypt_string'
+```
 
-### `site.yml` and `playbooks/`
+For this to work you have to configure `vault_password_file = ./path_to_secret_file` and have you vault key in `./path_to_secret_file`. Of course, you should not commit `./path_to_secret_file` !
+
+## `site.yml` and `playbooks/`
 
 This directory contains the playbooks themselves. I always create a
 "master" playbook called `site.yml` in the playbook root directory,
@@ -470,14 +467,14 @@ order playbook will be executed just by looking at `playbooks/` content.
 
 For instance:
 
-{% highlight yaml %}
+```yaml
 
 #!/usr/bin/env ansible-playbook
 
 - import_playbook: playbooks/10_database.yml
 - import_playbook: playbooks/20_stuff.yml
 
-{% endhighlight %}
+```
 
 The rationale is to be able to use `ansible-pull` easily if needed (`ansible-
 pull`, by default, tries to execute a playbook called`site.yml`). The other
@@ -495,7 +492,7 @@ make the playbook directly executable (adjust `ansible-playbook` path and `chmod
 +x` the playbook file). You can still pass additional
 `ansible-playbook` parameters if required.
 
-### `requirements.txt`
+## `requirements.txt`
 
 This file contains the result of a `pip freeze`. I now only use `pip`
 under `virtualenv` to install ansible and required modules. It makes it
@@ -504,7 +501,7 @@ projects.
 
 So when someone needs to work on this project, the workflow is simple:
 
-{% highlight bash %}
+```bash
 
 git clone http://github.com/some/playbook-repos
 cd playbook-repos
@@ -512,12 +509,11 @@ mkvirtualenv playbook-repos --no-site-packages
 pip install -r requirements.txt
 ansible-galaxy install -r roles/requirements.yml
 
-{% endhighlight %}
-
+```
 
 and you're good to go.
 
-## Layout Antipatterns
+# Layout Antipatterns
 
 When I started using Ansible, I cumulated several antipatterns at the
 same time: trying to emcompass all my infrastructure in a single
@@ -527,7 +523,7 @@ playbook, without using any role.
 While this sounds feasible, it is doomed to failure unless you manage a
 very small infrastructure. Let's zoom in briefly on each mistake.
 
-### Trying to encompass all your infrastructure in one playbook
+## Trying to encompass all your infrastructure in one playbook
 
 Is is tempting to aim for a one-liner that will magically deploy all
 your infrastructure in one shot. This gives you some bragging rights at
@@ -540,14 +536,14 @@ However, it has many drawbacks:
 there are workaround for this, but it will require some command line
 magic, a lot of thinking.
 
-- it mixes bananas and apples: you should strive for separation of
-  concerns in your playbooks if you want be able to read them (and, as a
-consequence, maintain them).
+- it mixes bananas and apples: you should strive for separation of concerns in
+  your playbooks if you want be able to read them (and, as a consequence,
+  maintain them).
 
 As a consequence, your infrastructure code will be unnecessary hard to
 test and maintain.
 
-### Per-host fine grained variables
+## Per-host fine grained variables
 
 This is a corolary of the previous antipattern: when you try to
 encompass your whole infrastructure, you start to think, inheritance,
@@ -566,7 +562,7 @@ your Ansible work potentially unshareable with people using
 on this one, it is time to make some apologies. Sorry folks. Michael
 DeHaan did not like it, and he was right.
 
-### Single playbook
+## Single playbook
 
 A single playbook relates to the first Sin again, but also applies to
 more focused playbooks where you only deploy one thing. Splitting your
@@ -578,7 +574,7 @@ the color of a button in your web app ?
 Split your playbook in related parts that reflects your stack
 architecture. They will be faster and easier to use.
 
-### No roles (tasks only)
+## No roles (tasks only)
 
 Well, this is obvious. Even if you don't want to share, make roles and
 strive for code reuse. Reused code will save you time of course, but it
@@ -593,6 +589,8 @@ terms of roles, you don't need to think about the nitty gritty details
 of the roles when reading your playbooks. If your roles are thouroughly
 tested, you can read your infrastructure in seconds. Add tasks to the
 mix, and you loose this superpower.
+
+Thanks to @theenglishway for suggestions & post review
 
 [^1]: Yes, you could separate your application server (e.g. php-fpm) and put it on a different machine than your webserver, it ll depends on your local context.
 

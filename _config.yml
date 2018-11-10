@@ -34,7 +34,7 @@ theme: jekyll-theme-so-simple
 
 search_full_content: true
 read_time: true
-words_per_minute: 200
+words_per_minute: 175
 
 plugins:
   - jekyll-feed

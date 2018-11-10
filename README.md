@@ -4,8 +4,8 @@
 
 - create a new file in `_drafts/permalink-address.md`
 - find a nice illustration for the thumbnail and the article:
-    - thumbnail: 200x200
-    - full size: 1280x256
+  - thumbnail: 200x200
+  - full size: 1280x256
 - name the image using the same slug (`permalink-address.jpg` and `permalink-address-thumb.jpg`)
 - start `jekyll server --drafts` to check post while working on it
 
