@@ -39,6 +39,7 @@ words_per_minute: 175
 plugins:
   - jekyll-feed
   - jekyll-gist
+  - jekyll-seo-tag
 
 # Footer Links
 footer_links:

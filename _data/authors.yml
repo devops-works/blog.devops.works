@@ -12,3 +12,7 @@ mb:
     - title: GitHub
       url: https://github.com/leucos
       icon: fab fa-github-square
+    - title: LinkedIn
+      url: https://fr.linkedin.com/in/michelblanc
+      icon: fab fa-linkedin
+
