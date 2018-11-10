@@ -1,0 +1,14 @@
+cg:
+  name: Clément Gibaud
+  picture: /images/avatars/cg.jpg
+  links:
+    - title: GitHub
+      url: https://github.com/cleming
+      icon: fab fa-github-square
+mb:
+  name: Michel Blanc
+  picture: /images/avatars/mb.png
+  links:
+    - title: GitHub
+      url: https://github.com/leucos
+      icon: fab fa-github-square
